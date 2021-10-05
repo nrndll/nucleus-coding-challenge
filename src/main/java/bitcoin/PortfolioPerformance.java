@@ -5,11 +5,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class PortfolioPerformance {
 
@@ -31,106 +28,65 @@ public class PortfolioPerformance {
     // Complete this method to return a list of daily portfolio values with one record for each day from the 01-09-2021-07-09-2021 in ascending date order
     public static List<DailyPortfolioValue> getDailyPortfolioValues() {
 
+        // get list of DailyPortFolio objects with total number of bitcoins as their value.
+        List<DailyPortfolioValue> totalBitcoinsPerDay = getTotalBitcoinsPerDay();
         List<DailyPortfolioValue> dailyPortfolioValues = new ArrayList<>();
 
-        // generate a new list of dates for days 1st - 7th September
+        // generate a new list of DailyPortFolio objects by iterating over the list totalBitcoinsPerDay.
+        // For each element, iterate over the PRICES list and where currentPrice dayOfTheMonth is less than or equal to the current element's, multiply value by price.
+        for (DailyPortfolioValue element : totalBitcoinsPerDay) {
+            BigDecimal currentValue = new BigDecimal(0);
+
+            // currentValue is reassigned each time, not cumulative and the objects are in ascending order by date.
+            // The latest price will be used where multiple entries for a date are present because it will be the last calculation performed.
+            for (Price currentPrice : PRICES) {
+                if (currentPrice.effectiveDate().getDayOfMonth() <= element.date().getDayOfMonth()) {
+                    currentValue = element.value().multiply(currentPrice.price());
+                }
+            }
+            dailyPortfolioValues.add(new DailyPortfolioValue(element.date(), currentValue));
+        }
+        return dailyPortfolioValues;
+    }
+
+    // generate a new list of dates for days 1st - 7th September
+    public static List<LocalDate> getListOfDates() {
+
         List<LocalDate> days = new ArrayList<>();
+
         int i;
         for (i=0; i<=7-1; i++) {
-           LocalDate newDay = LocalDate.of(2021, Month.SEPTEMBER, i+1);
-           days.add(newDay);
+            LocalDate newDay = LocalDate.of(2021, Month.SEPTEMBER, i+1);
+            days.add(newDay);
         }
+        return days;
+    }
 
-        // generate a new list of DailyPortFolioValue objects, using dates from days ArrayList and taking values from TRANSACTIONS to get amount of bitcoin for each day.
-        List<DailyPortfolioValue> dailyPortFolioCoins = new ArrayList<>();
+    // generate a new list of DailyPortFolioValue objects by calling a method to generate a list of LocalDates then iterate over the TRANSACTIONS list to get the total bitcoins for each day.
+    public static List<DailyPortfolioValue> getTotalBitcoinsPerDay() {
 
-//        // generate a Map with the LocalDate as key and the BigDecimal object runningTotal as value. This allows the cumulative total of bitcoins to be stored alongside the respective date.
-//          Map<LocalDate, BigDecimal> dailyPortFolioCoins = new HashMap<>();
+        List<LocalDate> days = getListOfDates();
+        List<DailyPortfolioValue> totalBitcoinsPerDay = new ArrayList<>();
 
         for (LocalDate day : days) {
             BigDecimal runningTotal = new BigDecimal(0);
 
-            // create stream to filter TRANSACTIONS array by current date of iterated objected and collect into a List
+            // get a list of Transaction objects, filtered by the dayOfMonth of the current day.
+            // use a stream to filter and then collect into a list.
+            // collection will hold all Transactions up to and including the current day.
             List<Transaction> filteredTransactions = TRANSACTIONS.stream()
                     .filter(transaction -> transaction.effectiveDate().getDayOfMonth() <= day.getDayOfMonth())
                     .collect(Collectors.toList());
-            // runningTotal needs to be final, can't be reassigned.
-//                  .forEach(transaction -> runningTotal = runningTotal.add(transaction.numberOfBitcoins()));
 
-            // iterate over filtered List to sum the total number of bitcoins for the current day
+            // iterate over the filtered list to sum the total number of bitcoins for the current day
             for (Transaction transaction : filteredTransactions) {
+
+                // runningTotal is the cumulative number of bitcoins, carried over each day and affected by transactions.
+                // It is a BigDecimal object which is immutable. Therefore, it is reassigned and given the result of this calculation each time it is performed.
                 runningTotal = runningTotal.add(transaction.numberOfBitcoins());
             }
-
-            dailyPortFolioCoins.add(new DailyPortfolioValue(day, runningTotal));
+            totalBitcoinsPerDay.add(new DailyPortfolioValue(day, runningTotal));
         }
-
-//        for (Map.Entry<LocalDate, BigDecimal> entry : dailyPortFolioCoins.entrySet()) {
-//            LocalDate key = entry.getKey();
-//            BigDecimal value = entry.getValue();
-//            BigDecimal actualValue = new BigDecimal(0);
-//
-//            for (Price price : PRICES) {
-//                if (key.getDayOfMonth() <= price.effectiveDate().getDayOfMonth()) {
-//                    actualValue = value.multiply(price.price());
-//                }
-//            }
-//
-//            dailyPortfolioValues.add(new DailyPortfolioValue(key, actualValue));
-//        }
-
-        // generate a new list of DailyPortFolio objects by iterating over dailyPortFolioCoins, for each object iterate over PRICES list and where dates match, multiply value by price.
-        for (DailyPortfolioValue dailyPortfolioCoin : dailyPortFolioCoins) {
-            BigDecimal currentValue = new BigDecimal(0);
-
-            // as currentValue is reassigned each time and not cumulative, and the objects are in ascending order by date, the latest price will be used where multiple entries for a date are present.
-            for (Price currentPrice : PRICES) {
-                if (currentPrice.effectiveDate().getDayOfMonth() <= dailyPortfolioCoin.date().getDayOfMonth()) {
-                    currentValue = dailyPortfolioCoin.value().multiply(currentPrice.price());
-                }
-
-            }
-            dailyPortfolioValues.add(new DailyPortfolioValue(dailyPortfolioCoin.date(), currentValue));
-        }
-
-//        for (LocalDate day : days) {
-//            int j = 0;
-//            while (day.getDayOfMonth() <= TRANSACTIONS.get(j).effectiveDate().getDayOfMonth()) {
-//                runningTotal = runningTotal.add(TRANSACTIONS.get(j).numberOfBitcoins());
-//                j++;
-//            }
-//            DailyPortfolioValue dailyPortFolioCoin = new DailyPortfolioValue(day, runningTotal);
-//            dailyPortFolioCoins.add(dailyPortFolioCoin);
-//        }
-
-//            for (Transaction transaction : TRANSACTIONS) {
-//                if (day.getDayOfMonth() <= transaction.effectiveDate().getDayOfMonth()) {
-//                    runningTotal = runningTotal.add(transaction.numberOfBitcoins());
-//                    DailyPortfolioValue dailyPortFolioCoin = new DailyPortfolioValue(day, runningTotal);
-//                    dailyPortFolioCoins.add(dailyPortFolioCoin);
-//                }
-//
-//                else {
-//                    DailyPortfolioValue dailyPortFolioCoin = new DailyPortfolioValue(day, runningTotal);
-//                    dailyPortFolioCoins.add(dailyPortFolioCoin);
-//                }
-//            }
-//        }
-
-//        List<DailyPortfolioValue> dailyPortfolioValues = new ArrayList<>();
-//        for (DailyPortfolioValue dailyPortFolioCoin : dailyPortFolioCoins) {
-//            BigDecimal endOfDayValue = new BigDecimal(0);
-//
-//            int j;
-//            for (j=0; j<PRICES.size(); j++) {
-//                if (PRICES.get(j).effectiveDate().getDayOfMonth() == dailyPortFolioCoin.date().getDayOfMonth()
-//                        && PRICES.get(j+1).effectiveDate().getDayOfMonth() != dailyPortFolioCoin.date().getDayOfMonth()) {
-//                    endOfDayValue = dailyPortFolioCoin.value().multiply(PRICES.get(j).price());
-//                }
-//            }
-//            dailyPortfolioValues.add(new DailyPortfolioValue(dailyPortFolioCoin.date(), endOfDayValue));
-//        }
-
-        return dailyPortfolioValues;
+        return totalBitcoinsPerDay;
     }
 }
