@@ -6,7 +6,6 @@ import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class PortfolioPerformance {
 
@@ -28,11 +27,9 @@ public class PortfolioPerformance {
     // Complete this method to return a list of daily portfolio values with one record for each day from the 01-09-2021-07-09-2021 in ascending date order
     public static List<DailyPortfolioValue> getDailyPortfolioValues() {
 
-        // get list of DailyPortFolio objects with total number of bitcoins as their value.
         List<DailyPortfolioValue> totalBitcoinsPerDay = getTotalBitcoinsPerDay();
         List<DailyPortfolioValue> dailyPortfolioValues = new ArrayList<>();
 
-        // generate a new list of DailyPortFolio objects by iterating over the list totalBitcoinsPerDay.
         // For each element, iterate over the PRICES list and where currentPrice dayOfTheMonth is less than or equal to the current element's, multiply value by price.
         for (DailyPortfolioValue element : totalBitcoinsPerDay) {
             BigDecimal currentValue = new BigDecimal(0);
@@ -49,7 +46,29 @@ public class PortfolioPerformance {
         return dailyPortfolioValues;
     }
 
-    // generate a new list of dates for days 1st - 7th September
+    // generate a list of DailyPortFolioValue objects, each with the total number of bitcoins per day as their value.
+    public static List<DailyPortfolioValue> getTotalBitcoinsPerDay() {
+
+        List<LocalDate> days = getListOfDates();
+        List<DailyPortfolioValue> totalBitcoinsPerDay = new ArrayList<>();
+
+        for (LocalDate day : days) {
+            BigDecimal runningTotal = new BigDecimal(0);
+
+            // iterate over TRANSACTIONS to sum the total number of bitcoins for the current day
+            for (Transaction transaction : TRANSACTIONS) {
+                if (transaction.effectiveDate().getDayOfMonth() <= day.getDayOfMonth()) {
+
+                    // runningTotal is a BigDecimal object, which are immutable. Therefore, it is reassigned and given the result of this calculation each time it is performed.
+                    runningTotal = runningTotal.add(transaction.numberOfBitcoins());
+                }
+            }
+            totalBitcoinsPerDay.add(new DailyPortfolioValue(day, runningTotal));
+        }
+        return totalBitcoinsPerDay;
+    }
+
+    // generate a new list of LocalDate objects for days 1st - 7th September
     public static List<LocalDate> getListOfDates() {
 
         List<LocalDate> days = new ArrayList<>();
@@ -60,33 +79,5 @@ public class PortfolioPerformance {
             days.add(newDay);
         }
         return days;
-    }
-
-    // generate a new list of DailyPortFolioValue objects by calling a method to generate a list of LocalDates then iterate over the TRANSACTIONS list to get the total bitcoins for each day.
-    public static List<DailyPortfolioValue> getTotalBitcoinsPerDay() {
-
-        List<LocalDate> days = getListOfDates();
-        List<DailyPortfolioValue> totalBitcoinsPerDay = new ArrayList<>();
-
-        for (LocalDate day : days) {
-            BigDecimal runningTotal = new BigDecimal(0);
-
-            // get a list of Transaction objects, filtered by the dayOfMonth of the current day.
-            // use a stream to filter and then collect into a list.
-            // collection will hold all Transactions up to and including the current day.
-            List<Transaction> filteredTransactions = TRANSACTIONS.stream()
-                    .filter(transaction -> transaction.effectiveDate().getDayOfMonth() <= day.getDayOfMonth())
-                    .collect(Collectors.toList());
-
-            // iterate over the filtered list to sum the total number of bitcoins for the current day
-            for (Transaction transaction : filteredTransactions) {
-
-                // runningTotal is the cumulative number of bitcoins, carried over each day and affected by transactions.
-                // It is a BigDecimal object which is immutable. Therefore, it is reassigned and given the result of this calculation each time it is performed.
-                runningTotal = runningTotal.add(transaction.numberOfBitcoins());
-            }
-            totalBitcoinsPerDay.add(new DailyPortfolioValue(day, runningTotal));
-        }
-        return totalBitcoinsPerDay;
     }
 }
