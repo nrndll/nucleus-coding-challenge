@@ -79,16 +79,17 @@ public class PortfolioPerformance {
 //            dailyPortfolioValues.add(new DailyPortfolioValue(key, actualValue));
 //        }
 
+        // generate a new list of DailyPortFolio objects by iterating over dailyPortFolioCoins, for each object iterate over PRICES list and where dates match, multiply value by price.
         for (DailyPortfolioValue dailyPortfolioCoin : dailyPortFolioCoins) {
             BigDecimal currentValue = new BigDecimal(0);
 
+            // as currentValue is reassigned each time and not cumulative, and the objects are in ascending order by date, the latest price will be used where multiple entries for a date are present.
             for (Price currentPrice : PRICES) {
-                if (dailyPortfolioCoin.date().getDayOfMonth() == currentPrice.effectiveDate().getDayOfMonth()) {
+                if (currentPrice.effectiveDate().getDayOfMonth() <= dailyPortfolioCoin.date().getDayOfMonth()) {
                     currentValue = dailyPortfolioCoin.value().multiply(currentPrice.price());
                 }
 
             }
-
             dailyPortfolioValues.add(new DailyPortfolioValue(dailyPortfolioCoin.date(), currentValue));
         }
 
@@ -130,7 +131,6 @@ public class PortfolioPerformance {
 //            dailyPortfolioValues.add(new DailyPortfolioValue(dailyPortFolioCoin.date(), endOfDayValue));
 //        }
 
-        System.out.println(dailyPortFolioCoins);
         return dailyPortfolioValues;
     }
 }
